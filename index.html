@@ -176,6 +176,14 @@ const frenchConjugationTemplate = {
 
 let selectedGender = null;
 
+
+ // 德语动词变位模板
+const germanConjugationTemplate = {
+    '现在时': ['ich', 'du', 'er/sie/es', 'wir', 'ihr', 'sie/Sie'],
+    '过去时': ['ich', 'du', 'er/sie/es', 'wir', 'ihr', 'sie/Sie'],
+    '完成时': ['ich habe', 'du hast', 'er/sie/es hat', 'wir haben', 'ihr habt', 'sie/Sie haben']
+};
+
 // 动态输入字段更新
 function updateInputFields() {
     const lang = document.getElementById('language').value;
@@ -250,29 +258,32 @@ function updateConjugationFields() {
                 <input type="text" id="plural" placeholder="复数形式">
             </div>
         `;
-    } else if (wordType === 'verb' && lang === 'fr') {
-        container.innerHTML = '<h3>动词变位输入</h3>';
-        Object.entries(frenchConjugationTemplate).forEach(([tense, pronouns]) => {
-            const tenseBox = document.createElement('div');
-            tenseBox.className = 'tense-box';
-            tenseBox.innerHTML = `
-                <h4>${tense}</h4>
-                <div class="conjugation-table">
-                    ${pronouns.map(pronoun => `
-                        <div class="input-group">
-                            <label>${pronoun}</label>
-                            <input type="text" 
-                                data-tense="${tense}" 
-                                data-pronoun="${pronoun.replace(/\//g, '_')}">
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            container.appendChild(tenseBox);
-        });
+    } else if (wordType === 'verb') {
+        if (lang === 'fr') {
+            // 原有法语逻辑
+        } else if (lang === 'de') {
+            container.innerHTML = '<h3>动词变位输入</h3>';
+            Object.entries(germanConjugationTemplate).forEach(([tense, pronouns]) => {
+                const tenseBox = document.createElement('div');
+                tenseBox.className = 'tense-box';
+                tenseBox.innerHTML = `
+                    <h4>${tense}</h4>
+                    <div class="conjugation-table">
+                        ${pronouns.map(pronoun => `
+                            <div class="input-group">
+                                <label>${pronoun}</label>
+                                <input type="text" 
+                                    data-tense="${tense}" 
+                                    data-pronoun="${pronoun.replace(/\//g, '_')}">
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(tenseBox);
+            });
+        }
     }
 }
-
 // 选择性别
 function selectGender(gender) {
     selectedGender = gender;
@@ -306,17 +317,21 @@ function addWord() {
                 
                 specificData.gender = selectedGender;
                 specificData.plural = document.getElementById('plural').value;
-            } else if (wordType === 'verb' && lang === 'fr') {
-                specificData.conjugations = {};
-                document.querySelectorAll('#conjugation-input input').forEach(input => {
-                    const tense = input.dataset.tense;
-                    const pronoun = input.dataset.pronoun;
-                    if (!specificData.conjugations[tense]) {
-                        specificData.conjugations[tense] = {};
-                    }
-                    specificData.conjugations[tense][pronoun] = input.value.trim();
-                });
-            }
+                
+            } else if (wordType === 'verb') {
+                if (lang === 'fr') {
+            // 原有法语逻辑
+                } else if (lang === 'de') {
+            specificData.conjugations = {};
+            document.querySelectorAll('#conjugation-input input').forEach(input => {
+                const tense = input.dataset.tense;
+                const pronoun = input.dataset.pronoun;
+                if (!specificData.conjugations[tense]) {
+                    specificData.conjugations[tense] = {};
+                }
+                specificData.conjugations[tense][pronoun] = input.value.trim();
+            });
+                }
             selectedGender = null;
             break;
             

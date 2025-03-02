@@ -10,7 +10,7 @@
             --fr-color: #2196F3;
             --de-color: #9C27B0;
             --ar-color: #FF9800;
-            --font-size: 18px; /* 增大基础字号 */
+            --font-size: 18px;
         }
         body {
             font-family: Arial, sans-serif;
@@ -20,7 +20,7 @@
             grid-template-columns: 1fr 1fr 1fr;
             gap: 20px;
         }
-        h2 { font-size: 24px; } /* 保持标题相对大小 */
+        h2 { font-size: 24px; }
         .section {
             background: #f5f5f5;
             padding: 20px;
@@ -31,6 +31,7 @@
             font-size: var(--font-size);
             padding: 8px;
             margin: 5px;
+            width: 200px;
         }
         .word-item {
             background: white;
@@ -44,6 +45,14 @@
             font-size: 14px;
             color: #666;
         }
+        .conjugation-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+        }
+        .quiz-question { background: white; padding: 15px; margin: 10px 0; }
+        #word-list { max-height: 60vh; overflow-y: auto; }
+        .gender-buttons { display: flex; gap: 5px; }
     </style>
 </head>
 <body>
@@ -93,7 +102,7 @@
     </div>
 
 <script>
-// 数据存储结构（新增date字段）
+// 数据存储结构
 let words = {
     en: JSON.parse(localStorage.getItem('words_en')) || [],
     fr: JSON.parse(localStorage.getItem('words_fr')) || [],
@@ -103,34 +112,150 @@ let words = {
 
 let selectedGender = null;
 
-// 添加词条时自动清空输入框
-function clearInputs() {
-    document.getElementById('word').value = '';
-    document.getElementById('translation').value = '';
-    document.querySelectorAll('#dynamic-inputs input').forEach(input => input.value = '');
-    selectedGender = null;
-    updateInputFields(); // 重置动态输入区
+// 动态输入界面
+function updateInputFields() {
+    const lang = document.getElementById('language').value;
+    const container = document.getElementById('dynamic-inputs');
+    container.innerHTML = '';
+
+    switch(lang) {
+        case 'en':
+            container.innerHTML = `<input type="text" id="note" placeholder="备注（可选）">`;
+            break;
+            
+        case 'fr':
+        case 'de':
+            container.innerHTML = `
+                <select id="word-type" onchange="updateConjugationFields()">
+                    <option value="noun">名词</option>
+                    <option value="verb">动词</option>
+                    <option value="other">其他</option>
+                </select>
+                <div id="gender-input"></div>
+                <div id="conjugation-input"></div>
+            `;
+            updateConjugationFields();
+            break;
+            
+        case 'ar':
+            container.innerHTML = `
+                <select id="word-type">
+                    <option value="noun">名词</option>
+                    <option value="verb">动词</option>
+                </select>
+                <input type="text" id="root-letters" placeholder="词根字母">
+            `;
+            break;
+    }
 }
 
-// 修改后的添加词条函数（添加日期字段）
+// 更新变位输入
+function updateConjugationFields() {
+    const lang = document.getElementById('language').value;
+    const wordType = document.getElementById('word-type').value;
+    const container = document.getElementById('conjugation-input');
+    const genderContainer = document.getElementById('gender-input');
+    
+    genderContainer.innerHTML = '';
+    container.innerHTML = '';
+
+    if (wordType === 'noun') {
+        const genders = lang === 'fr' ? ['阴', '阳'] : ['阴', '阳', '中'];
+        genderContainer.innerHTML = `
+            <div class="gender-buttons">
+                ${genders.map(g => `
+                    <button type="button" onclick="selectGender('${g}')">${g}</button>
+                `).join('')}
+            </div>
+            <input type="text" id="plural" placeholder="复数形式">
+        `;
+    } else if (wordType === 'verb') {
+        const conjugations = {
+            fr: ['现在时', '未完成过去时', '复合过去时', '简单将来时', '条件式现在时', '虚拟式现在时'],
+            de: ['现在时', '过去时', '完成时']
+        }[lang];
+        
+        container.innerHTML = `
+            <div class="conjugation-grid">
+                ${conjugations.map(c => `
+                    <div>
+                        <label>${c}</label>
+                        <input type="text" data-tense="${c}">
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+}
+
+// 添加词条
 function addWord() {
     const lang = document.getElementById('language').value;
     const baseData = {
         word: document.getElementById('word').value.trim(),
         translation: document.getElementById('translation').value.trim(),
         language: lang,
-        date: new Date().toISOString() // 添加日期
+        date: new Date().toISOString()
     };
 
-    // ...（原有字段处理逻辑保持不变）...
+    let specificData = {};
+    switch(lang) {
+        case 'en':
+            specificData.note = document.getElementById('note')?.value;
+            break;
+            
+        case 'fr':
+        case 'de':
+            const wordType = document.getElementById('word-type').value;
+            specificData.type = wordType;
+            
+            if (wordType === 'noun') {
+                if (!selectedGender) return alert('请选择性别！');
+                if (!document.getElementById('plural').value) return alert('请输入复数形式！');
+                
+                specificData.gender = selectedGender;
+                specificData.plural = document.getElementById('plural').value;
+            } else if (wordType === 'verb') {
+                specificData.conjugations = {};
+                document.querySelectorAll('#conjugation-input input').forEach(input => {
+                    const tense = input.dataset.tense;
+                    specificData.conjugations[tense] = input.value.trim();
+                });
+                
+                // 法语变位验证
+                if (lang === 'fr' && Object.keys(specificData.conjugations).length !== 6) {
+                    return alert('请输入完整的法语动词变位！');
+                }
+            }
+            selectedGender = null;
+            break;
+            
+        case 'ar':
+            specificData = {
+                type: document.getElementById('word-type').value,
+                rootLetters: document.getElementById('root-letters').value
+            };
+            break;
+    }
 
+    if (!baseData.word || !baseData.translation) return alert('请填写必填字段！');
+    
     words[lang].push({...baseData, ...specificData});
     localStorage.setItem(`words_${lang}`, JSON.stringify(words[lang]));
-    clearInputs(); // 添加后清空输入
+    clearInputs();
     updateWordList();
 }
 
-// 增强的词库显示（按日期排序 + 编辑功能）
+// 清空输入
+function clearInputs() {
+    document.getElementById('word').value = '';
+    document.getElementById('translation').value = '';
+    document.querySelectorAll('#dynamic-inputs input').forEach(input => input.value = '');
+    selectedGender = null;
+    updateInputFields();
+}
+
+// 更新词库
 function updateWordList() {
     const filterLang = document.getElementById('filter-language').value;
     const list = document.getElementById('word-list');
@@ -142,9 +267,7 @@ function updateWordList() {
         displayWords = words[filterLang];
     }
 
-    // 按日期降序排序
     displayWords.sort((a, b) => new Date(b.date) - new Date(a.date));
-
     list.innerHTML = displayWords.map((word, index) => `
         <div class="word-item" data-lang="${word.language}" data-index="${index}">
             <div class="date-tag">${new Date(word.date).toLocaleDateString()}</div>
@@ -168,21 +291,40 @@ function updateWordList() {
     `).join('');
 }
 
-// 编辑功能
+// 编辑词条
 function editWord(lang, index) {
     const word = words[lang][index];
-    const newWord = prompt("修改单词/短语", word.word);
-    const newTranslation = prompt("修改翻译", word.translation);
-    
-    if (newWord && newTranslation) {
-        words[lang][index].word = newWord;
-        words[lang][index].translation = newTranslation;
-        localStorage.setItem(`words_${lang}`, JSON.stringify(words[lang]));
-        updateWordList();
+    let newData = {...word};
+
+    newData.word = prompt("修改单词/短语", word.word) || word.word;
+    newData.translation = prompt("修改翻译", word.translation) || word.translation;
+
+    // 法语/德语名词
+    if (word.type === 'noun') {
+        newData.gender = prompt("修改性别", word.gender) || word.gender;
+        newData.plural = prompt("修改复数形式", word.plural) || word.plural;
     }
+
+    // 动词变位
+    if (word.type === 'verb') {
+        const tenses = lang === 'fr' ? 
+            ['现在时', '未完成过去时', '复合过去时', '简单将来时', '条件式现在时', '虚拟式现在时'] :
+            ['现在时', '过去时', '完成时'];
+        
+        tenses.forEach(tense => {
+            const newForm = prompt(`修改【${tense}】变位`, word.conjugations?.[tense] || '');
+            if (newForm !== null) {
+                newData.conjugations[tense] = newForm.trim();
+            }
+        });
+    }
+
+    words[lang][index] = newData;
+    localStorage.setItem(`words_${lang}`, JSON.stringify(words[lang]));
+    updateWordList();
 }
 
-// 删除功能
+// 删除词条
 function deleteWord(lang, index) {
     if (confirm("确定要删除这个词条吗？")) {
         words[lang].splice(index, 1);
@@ -191,7 +333,113 @@ function deleteWord(lang, index) {
     }
 }
 
-// ...（其他原有函数保持不变）...
+// 考核功能
+function startQuiz() {
+    const quizLang = document.getElementById('quiz-language').value;
+    let pool = [];
+    
+    if (quizLang === 'all') {
+        pool = [...words.en, ...words.fr, ...words.de, ...words.ar];
+    } else {
+        pool = words[quizLang];
+    }
+
+    if (pool.length === 0) return alert('请先添加词条！');
+    
+    const quizWords = getRandomSubarray(pool, 10);
+    let current = 0, score = 0;
+
+    function showQuestion() {
+        const word = quizWords[current];
+        const quizArea = document.getElementById('quiz-area');
+        quizArea.innerHTML = `
+            <div class="quiz-question">
+                <h3>第 ${current + 1} 题 (${word.language.toUpperCase()})</h3>
+                <p>${generateQuestion(word)}</p>
+                <input type="text" id="answer">
+                <button onclick="checkAnswer()">提交</button>
+            </div>
+        `;
+    }
+
+    window.checkAnswer = () => {
+        const userAnswer = document.getElementById('answer').value.trim();
+        const correctAnswers = getCorrectAnswers(quizWords[current]);
+        
+        if (correctAnswers.includes(userAnswer.toLowerCase())) {
+            score++;
+            alert('正确！✅');
+        } else {
+            alert(`错误！❌ 正确答案是: ${correctAnswers.join(' 或 ')}`);
+        }
+
+        current++;
+        if (current < quizWords.length) {
+            showQuestion();
+        } else {
+            showScore();
+        }
+    }
+
+    function showScore() {
+        document.getElementById('score').innerHTML = `
+            <h3>得分: ${score}/${quizWords.length}</h3>
+            <button onclick="startQuiz()">重新测试</button>
+        `;
+    }
+
+    showQuestion();
+}
+
+// 辅助函数
+function getRandomSubarray(arr, n) {
+    return [...arr].sort(() => Math.random() - 0.5).slice(0, n);
+}
+
+function generateQuestion(word) {
+    const questionTypes = {
+        en: `"${word.translation}"的英文是什么？`,
+        fr: word.type === 'noun' ? 
+            `"${word.word}"的性别和复数形式是？` : 
+            `"${word.translation}"的${getRandomConjugationTense(word)}形式是？`,
+        de: word.type === 'noun' ?
+            `"${word.word}"的词性是？` :
+            `"${word.translation}"的${getRandomConjugationTense(word)}形式是？`,
+        ar: `"${word.translation}"的词根字母是？`
+    };
+    return questionTypes[word.language] || `"${word.translation}"对应的单词是？`;
+}
+
+function getCorrectAnswers(word) {
+    let answers = [];
+    switch(word.language) {
+        case 'en':
+            answers = [word.word];
+            break;
+        case 'fr':
+        case 'de':
+            if (word.type === 'noun') {
+                answers = [word.gender, word.plural];
+            } else if (word.type === 'verb') {
+                const tense = getRandomConjugationTense(word);
+                answers = [word.conjugations[tense]];
+            }
+            break;
+        case 'ar':
+            answers = [word.rootLetters];
+            break;
+    }
+    return answers.map(a => a?.toLowerCase()).filter(a => a);
+}
+
+function getRandomConjugationTense(word) {
+    const tenses = Object.keys(word.conjugations || {});
+    return tenses[Math.floor(Math.random() * tenses.length)];
+}
+
+// 初始化
+updateInputFields();
+updateWordList();
 </script>
 </body>
 </html>

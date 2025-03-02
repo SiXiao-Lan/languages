@@ -3,35 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>语言复习助手</title>
+    <title>多语言复习系统</title>
     <style>
+        /* 样式优化 */
         :root {
-            --primary-color: #4CAF50;
-            --secondary-color: #2196F3;
+            --en-color: #4CAF50;
+            --fr-color: #2196F3;
+            --de-color: #9C27B0;
+            --ar-color: #FF9800;
         }
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
-        .section {
-            background: #f5f5f5;
+        .language-section {
             padding: 20px;
             border-radius: 10px;
+            border: 2px solid var(--primary-color);
         }
-        input, select, button {
-            margin: 5px;
-            padding: 8px;
-            width: 200px;
-        }
-        .conjugation-inputs {
-            margin: 10px 0;
-        }
-        #word-list {
-            max-height: 300px;
-            overflow-y: auto;
+        .dynamic-inputs { margin: 10px 0; }
+        .gender-buttons { display: flex; gap: 5px; }
+        .gender-buttons button { padding: 5px 10px; }
+        .conjugation-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
         }
     </style>
 </head>
@@ -39,156 +38,189 @@
     <!-- 输入区 -->
     <div class="section">
         <h2>添加新词条</h2>
-        <select id="language">
+        <select id="language" onchange="updateInputFields()">
             <option value="en">英语</option>
             <option value="fr">法语</option>
-            <option value="es">西班牙语</option>
+            <option value="de">德语</option>
+            <option value="ar">阿拉伯语</option>
         </select>
-        <input type="text" id="word" placeholder="单词">
-        <input type="text" id="translation" placeholder="翻译">
-        <select id="word-type">
-            <option value="noun">名词</option>
-            <option value="verb">动词</option>
-            <option value="adj">形容词</option>
-        </select>
-        <div class="conjugation-inputs" id="conjugation-box">
-            <input type="text" placeholder="变位形式 (如: eat/ate/eaten)">
-        </div>
+
+        <!-- 通用字段 -->
+        <input type="text" id="word" placeholder="单词/短语">
+        <input type="text" id="translation" placeholder="中文翻译">
+
+        <!-- 动态输入区 -->
+        <div id="dynamic-inputs"></div>
         <button onclick="addWord()">添加词条</button>
     </div>
 
-    <!-- 数据列表 -->
+    <!-- 数据展示区 -->
     <div class="section">
-        <h2>已存词条 (共<span id="count">0</span>条)</h2>
+        <h2>词库管理</h2>
         <div id="word-list"></div>
     </div>
 
-    <!-- 考核区 -->
-    <div class="section">
-        <h2>考核模式</h2>
-        <button onclick="startQuiz()">开始考核 (10题)</button>
-        <div id="quiz-area"></div>
-        <div id="score" style="margin-top: 20px;"></div>
-    </div>
+<script>
+// 数据存储结构
+let words = {
+    en: JSON.parse(localStorage.getItem('words_en')) || [],
+    fr: JSON.parse(localStorage.getItem('words_fr')) || [],
+    de: JSON.parse(localStorage.getItem('words_de')) || [],
+    ar: JSON.parse(localStorage.getItem('words_ar')) || []
+};
 
-    <script>
-        // 本地存储初始化
-        let words = JSON.parse(localStorage.getItem('words')) || [];
+// 根据语言更新输入界面
+function updateInputFields() {
+    const lang = document.getElementById('language').value;
+    const container = document.getElementById('dynamic-inputs');
+    
+    container.innerHTML = ''; // 清空原有内容
 
-        // 动态添加变位输入框
-        document.getElementById('word-type').addEventListener('change', function() {
-            const conjugationBox = document.getElementById('conjugation-box');
-            conjugationBox.innerHTML = this.value === 'verb' ? 
-                '<input type="text" placeholder="现在时">' +
-                '<input type="text" placeholder="过去时">' +
-                '<input type="text" placeholder="过去分词">' :
-                '<input type="text" placeholder="其他形式">';
-        });
-
-        // 添加词条
-        function addWord() {
-            const word = {
-                language: document.getElementById('language').value,
-                word: document.getElementById('word').value,
-                translation: document.getElementById('translation').value,
-                type: document.getElementById('word-type').value,
-                conjugations: Array.from(document.querySelectorAll('#conjugation-box input')).map(i => i.value)
-            };
+    switch(lang) {
+        case 'en':
+            container.innerHTML = `
+                <input type="text" id="note" placeholder="备注（可选）">
+            `;
+            break;
             
-            words.push(word);
-            localStorage.setItem('words', JSON.stringify(words));
-            updateWordList();
-        }
-
-        // 更新词条列表
-        function updateWordList() {
-            const list = document.getElementById('word-list');
-            list.innerHTML = words.map((word, index) => `
-                <div style="margin: 10px 0; padding: 10px; background: white;">
-                    <b>${word.word}</b> (${word.type})<br>
-                    翻译: ${word.translation}<br>
-                    ${word.conjugations.join(' / ')}
-                </div>
-            `).join('');
-            document.getElementById('count').textContent = words.length;
-        }
-
-        // 考核逻辑
-        function startQuiz() {
-            if (words.length === 0) return alert('请先添加词条！');
+        case 'fr':
+        case 'de':
+            container.innerHTML = `
+                <select id="word-type" onchange="updateConjugationFields()">
+                    <option value="noun">名词</option>
+                    <option value="verb">动词</option>
+                    <option value="other">其他</option>
+                </select>
+                <div id="gender-input"></div>
+                <div id="conjugation-input"></div>
+            `;
+            updateConjugationFields();
+            break;
             
-            const quizWords = getRandomWords(10);
-            let current = 0, score = 0;
+        case 'ar':
+            container.innerHTML = `
+                <select id="word-type">
+                    <option value="noun">名词</option>
+                    <option value="verb">动词</option>
+                </select>
+                <input type="text" id="root-letters" placeholder="词根字母">
+            `;
+            break;
+    }
+}
 
-            function showQuestion() {
-                const word = quizWords[current];
-                const quizArea = document.getElementById('quiz-area');
-                
-                quizArea.innerHTML = `
-                    <div style="margin: 20px 0;">
-                        <h3>第 ${current + 1} 题</h3>
-                        <p>${getQuestionText(word)}</p>
-                        <input type="text" id="answer">
-                        <button onclick="checkAnswer()">提交</button>
+// 更新变位/性别输入
+function updateConjugationFields() {
+    const lang = document.getElementById('language').value;
+    const wordType = document.getElementById('word-type').value;
+    const container = document.getElementById('conjugation-input');
+    const genderContainer = document.getElementById('gender-input');
+    
+    genderContainer.innerHTML = '';
+    container.innerHTML = '';
+
+    if (wordType === 'noun') {
+        // 性别选择
+        const genders = lang === 'fr' ? ['阴', '阳'] : ['阴', '阳', '中'];
+        genderContainer.innerHTML = `
+            <div class="gender-buttons">
+                ${genders.map(g => `
+                    <button type="button" onclick="selectGender('${g}')">${g}</button>
+                `).join('')}
+            </div>
+            <input type="text" id="plural" placeholder="复数形式">
+        `;
+    } else if (wordType === 'verb') {
+        // 动词变位模板
+        const conjugations = {
+            fr: ['现在时', '未完成过去时', '复合过去时', '简单将来时', '条件式现在时', '虚拟式现在时'],
+            de: ['现在时', '过去时', '完成时']
+        }[lang];
+        
+        container.innerHTML = `
+            <div class="conjugation-grid">
+                ${conjugations.map(c => `
+                    <div>
+                        <label>${c}</label>
+                        <input type="text" data-tense="${c}">
                     </div>
-                `;
+                `).join('')}
+            </div>
+        `;
+    }
+}
+
+// 添加词条
+function addWord() {
+    const lang = document.getElementById('language').value;
+    const baseData = {
+        word: document.getElementById('word').value,
+        translation: document.getElementById('translation').value
+    };
+
+    let specificData = {};
+    switch(lang) {
+        case 'en':
+            specificData.note = document.getElementById('note')?.value;
+            break;
+            
+        case 'fr':
+        case 'de':
+            const wordType = document.getElementById('word-type').value;
+            specificData.type = wordType;
+            
+            if (wordType === 'noun') {
+                specificData = {
+                    gender: selectedGender,
+                    plural: document.getElementById('plural').value
+                };
+            } else if (wordType === 'verb') {
+                specificData.conjugations = {};
+                document.querySelectorAll('#conjugation-input input').forEach(input => {
+                    specificData.conjugations[input.dataset.tense] = input.value;
+                });
             }
+            break;
+            
+        case 'ar':
+            specificData = {
+                type: document.getElementById('word-type').value,
+                rootLetters: document.getElementById('root-letters').value
+            };
+            break;
+    }
 
-            window.checkAnswer = () => {
-                const userAnswer = document.getElementById('answer').value.trim();
-                const correctAnswers = getCorrectAnswers(quizWords[current]);
-                
-                if (correctAnswers.includes(userAnswer.toLowerCase())) {
-                    score++;
-                    alert('正确！✅');
-                } else {
-                    alert(`错误！❌ 正确答案是: ${correctAnswers.join(' 或 ')}`);
-                }
+    words[lang].push({...baseData, ...specificData});
+    localStorage.setItem(`words_${lang}`, JSON.stringify(words[lang]));
+    updateWordList();
+}
 
-                current++;
-                if (current < quizWords.length) {
-                    showQuestion();
-                } else {
-                    showScore();
-                }
-            }
+// 更新词库显示
+function updateWordList() {
+    const lang = document.getElementById('language').value;
+    const list = document.getElementById('word-list');
+    
+    list.innerHTML = words[lang].map(word => `
+        <div class="word-item">
+            <h3>${word.word} (${lang.toUpperCase()})</h3>
+            <p>翻译：${word.translation}</p>
+            ${word.note ? `<p>备注：${word.note}</p>` : ''}
+            ${word.gender ? `<p>性别：${word.gender}</p>` : ''}
+            ${word.plural ? `<p>复数：${word.plural}</p>` : ''}
+            ${word.conjugations ? `
+                <div class="conjugations">
+                    ${Object.entries(word.conjugations).map(([tense, form]) => `
+                        <div>${tense}: ${form}</div>
+                    `).join('')}
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
+}
 
-            function getQuestionText(word) {
-                // 随机出题类型
-                const types = [
-                    `翻译 "${word.translation}" 的${word.language === 'en' ? '英语' : '外语'}单词是？`,
-                    `"${word.word}" 的过去分词形式是？`,
-                    `"${word.translation}" 对应的${word.type}是什么？`
-                ];
-                return types[Math.floor(Math.random() * types.length)];
-            }
-
-            function showScore() {
-                document.getElementById('score').innerHTML = `
-                    <h3>得分: ${score}/${quizWords.length}</h3>
-                    <button onclick="startQuiz()">重新测试</button>
-                `;
-            }
-
-            showQuestion();
-        }
-
-        // 工具函数
-        function getRandomWords(n) {
-            return [...words].sort(() => Math.random() - 0.5).slice(0, n);
-        }
-
-        function getCorrectAnswers(word) {
-            // 根据题目类型返回可能正确答案
-            return [
-                word.word.toLowerCase(),
-                word.translation.toLowerCase(),
-                ...word.conjugations.map(c => c.toLowerCase())
-            ];
-        }
-
-        // 初始化
-        updateWordList();
-    </script>
+// 初始化
+updateInputFields();
+updateWordList();
+</script>
 </body>
 </html>

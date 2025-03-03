@@ -1,7 +1,5 @@
-```html
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +12,6 @@
             --ar-color: #FF9800;
             --font-size: 18px;
         }
-
         body {
             font-family: 'Times New Roman', SimSun, sans-serif;
             margin: 0;
@@ -22,14 +19,12 @@
             grid-template-columns: 200px 1fr;
             min-height: 100vh;
         }
-
         /* 侧边导航栏 */
         .sidebar {
             background: #f0f0f0;
             padding: 20px;
             border-right: 1px solid #ddd;
         }
-
         .nav-button {
             display: block;
             width: 100%;
@@ -43,38 +38,28 @@
             cursor: pointer;
             font-family: SimSun;
         }
-
         /* 内容区 */
         .content {
             padding: 20px;
             display: none;
         }
-
-        .active-content {
-            display: block;
-        }
-
+        .active-content { display: block; }
         /* 输入表单 */
         .input-group {
             margin: 15px 0;
         }
-
         label {
             display: block;
             margin: 8px 0;
             font-family: SimSun;
         }
-
-        input,
-        select,
-        button {
+        input, select, button {
             font-size: var(--font-size);
             padding: 8px;
             margin: 5px 0;
             width: 300px;
             font-family: 'Times New Roman';
         }
-
         /* 法语动词变位表格 */
         .conjugation-table {
             display: grid;
@@ -82,44 +67,21 @@
             gap: 10px;
             margin: 15px 0;
         }
-
         .tense-box {
             border: 1px solid #ccc;
             padding: 10px;
             border-radius: 4px;
         }
-
         .word-item {
             background: white;
             margin: 10px 0;
             padding: 15px;
             border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
-        #word-list {
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-
-        /* 新增：词性按钮样式 */
-       .gender-buttons button {
-            padding: 8px 16px;
-            margin: 0 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            cursor: pointer;
-            background: white;
-            transition: background-color 0.3s;
-        }
-
-       .gender-buttons button.selected {
-            background: #2196F3;
-            color: white;
-        }
+        #word-list { max-height: 70vh; overflow-y: auto; }
     </style>
 </head>
-
 <body>
     <!-- 侧边导航 -->
     <div class="sidebar">
@@ -187,49 +149,49 @@
         <div id="score"></div>
     </div>
 
-    <script>
-        // 页面导航功能
-        function showContent(contentId) {
-            document.querySelectorAll('.content').forEach(el => el.classList.remove('active-content'));
-            document.getElementById(contentId).classList.add('active-content');
-        }
+<script>
+// 页面导航功能
+function showContent(contentId) {
+    document.querySelectorAll('.content').forEach(el => el.classList.remove('active-content'));
+    document.getElementById(contentId).classList.add('active-content');
+}
 
-        // 数据存储结构
-        let words = {
-            en: JSON.parse(localStorage.getItem('words_en')) || [],
-            fr: JSON.parse(localStorage.getItem('words_fr')) || [],
-            de: JSON.parse(localStorage.getItem('words_de')) || [],
-            ar: JSON.parse(localStorage.getItem('words_ar')) || []
-        };
+// 数据存储结构
+let words = {
+    en: JSON.parse(localStorage.getItem('words_en')) || [],
+    fr: JSON.parse(localStorage.getItem('words_fr')) || [],
+    de: JSON.parse(localStorage.getItem('words_de')) || [],
+    ar: JSON.parse(localStorage.getItem('words_ar')) || []
+};
 
-        // 法语动词变位模板
-        const frenchConjugationTemplate = {
-            '现在时': ['je', 'tu', 'il/elle', 'nous', 'vous', 'ils/elles'],
-            '未完成过去时': ['je', 'tu', 'il/elle', 'nous', 'vous', 'ils/elles'],
-            '复合过去时': ['j\'ai', 'tu as', 'il/elle a', 'nous avons', 'vous avez', 'ils/elles ont'],
-            '简单将来时': ['je', 'tu', 'il/elle', 'nous', 'vous', 'ils/elles'],
-            '条件式现在时': ['je', 'tu', 'il/elle', 'nous', 'vous', 'ils/elles'],
-            '虚拟式现在时': ['que je', 'que tu', 'qu\'il/elle', 'que nous', 'que vous', 'qu\'ils/elles']
-        };
+// 法语动词变位模板
+const frenchConjugationTemplate = {
+    '现在时': ['je', 'tu', 'il/elle', 'nous', 'vous', 'ils/elles'],
+    '未完成过去时': ['je', 'tu', 'il/elle', 'nous', 'vous', 'ils/elles'],
+    '复合过去时': ['j\'ai', 'tu as', 'il/elle a', 'nous avons', 'vous avez', 'ils/elles ont'],
+    '简单将来时': ['je', 'tu', 'il/elle', 'nous', 'vous', 'ils/elles'],
+    '条件式现在时': ['je', 'tu', 'il/elle', 'nous', 'vous', 'ils/elles'],
+    '虚拟式现在时': ['que je', 'que tu', 'qu\'il/elle', 'que nous', 'que vous', 'qu\'ils/elles']
+};
 
-        let selectedGender = null;
+let selectedGender = null;
 
-        // 动态输入字段更新
-        function updateInputFields() {
-            const lang = document.getElementById('language').value;
-            const container = document.getElementById('dynamic-inputs');
-            container.innerHTML = '';
+// 动态输入字段更新
+function updateInputFields() {
+    const lang = document.getElementById('language').value;
+    const container = document.getElementById('dynamic-inputs');
+    container.innerHTML = '';
 
-            switch (lang) {
-                case 'en':
-                    container.innerHTML = `<div class="input-group">
+    switch(lang) {
+        case 'en':
+            container.innerHTML = `<div class="input-group">
                 <input type="text" id="note" placeholder="备注（可选）">
             </div>`;
-                    break;
-
-                case 'fr':
-                case 'de':
-                    container.innerHTML = `
+            break;
+            
+        case 'fr':
+        case 'de':
+            container.innerHTML = `
                 <div class="input-group">
                     <select id="word-type" onchange="updateConjugationFields()">
                         <option value="noun">名词</option>
@@ -240,11 +202,11 @@
                 <div id="gender-input"></div>
                 <div id="conjugation-input"></div>
             `;
-                    updateConjugationFields();
-                    break;
-
-                case 'ar':
-                    container.innerHTML = `
+            updateConjugationFields();
+            break;
+            
+        case 'ar':
+            container.innerHTML = `
                 <div class="input-group">
                     <select id="word-type">
                         <option value="noun">名词</option>
@@ -255,30 +217,30 @@
                     <input type="text" id="root-letters" placeholder="词根字母">
                 </div>
             `;
-                    break;
-            }
-        }
+            break;
+    }
+}
 
-        // 更新变位输入
-        function updateConjugationFields() {
-            const lang = document.getElementById('language').value;
-            const wordType = document.getElementById('word-type').value;
-            const container = document.getElementById('conjugation-input');
-            const genderContainer = document.getElementById('gender-input');
+// 更新变位输入
+function updateConjugationFields() {
+    const lang = document.getElementById('language').value;
+    const wordType = document.getElementById('word-type').value;
+    const container = document.getElementById('conjugation-input');
+    const genderContainer = document.getElementById('gender-input');
+    
+    genderContainer.innerHTML = '';
+    container.innerHTML = '';
 
-            genderContainer.innerHTML = '';
-            container.innerHTML = '';
-
-            if (wordType === 'noun') {
-                const genders = lang === 'fr' ? ['阴', '阳'] : ['阴', '阳', '中'];
-                genderContainer.innerHTML = `
+    if (wordType === 'noun') {
+        const genders = lang === 'fr' ? ['阴', '阳'] : ['阴', '阳', '中'];
+        genderContainer.innerHTML = `
             <div class="input-group">
                 <label>词性</label>
                 <div class="gender-buttons">
                     ${genders.map(g => `
                         <button type="button" 
-                            onclick="selectGender('${g}', this)" 
-                            ${selectedGender === g ? 'class="selected"' : ''}>
+                            onclick="selectGender('${g}')" 
+                            style="${selectedGender === g ? 'background: #2196F3; color: white' : ''}">
                             ${g}
                         </button>
                     `).join('')}
@@ -288,12 +250,12 @@
                 <input type="text" id="plural" placeholder="复数形式">
             </div>
         `;
-            } else if (wordType === 'verb' && lang === 'fr') {
-                container.innerHTML = '<h3>动词变位输入</h3>';
-                Object.entries(frenchConjugationTemplate).forEach(([tense, pronouns]) => {
-                    const tenseBox = document.createElement('div');
-                    tenseBox.className = 'tense-box';
-                    tenseBox.innerHTML = `
+    } else if (wordType === 'verb' && lang === 'fr') {
+        container.innerHTML = '<h3>动词变位输入</h3>';
+        Object.entries(frenchConjugationTemplate).forEach(([tense, pronouns]) => {
+            const tenseBox = document.createElement('div');
+            tenseBox.className = 'tense-box';
+            tenseBox.innerHTML = `
                 <h4>${tense}</h4>
                 <div class="conjugation-table">
                     ${pronouns.map(pronoun => `
@@ -306,102 +268,97 @@
                     `).join('')}
                 </div>
             `;
-                    container.appendChild(tenseBox);
+            container.appendChild(tenseBox);
+        });
+    }
+}
+
+// 选择性别
+function selectGender(gender) {
+    selectedGender = gender;
+    updateConjugationFields();
+}
+
+// 添加词条
+function addWord() {
+    const lang = document.getElementById('language').value;
+    const baseData = {
+        question: document.getElementById('question').value.trim(),
+        answer: document.getElementById('answer').value.trim(),
+        language: lang,
+        date: new Date().toISOString()
+    };
+
+    let specificData = {};
+    switch(lang) {
+        case 'en':
+            specificData.note = document.getElementById('note')?.value;
+            break;
+            
+        case 'fr':
+        case 'de':
+            const wordType = document.getElementById('word-type').value;
+            specificData.type = wordType;
+            
+            if (wordType === 'noun') {
+                if (!selectedGender) return alert('请选择性别！');
+                if (!document.getElementById('plural').value) return alert('请输入复数形式！');
+                
+                specificData.gender = selectedGender;
+                specificData.plural = document.getElementById('plural').value;
+            } else if (wordType === 'verb' && lang === 'fr') {
+                specificData.conjugations = {};
+                document.querySelectorAll('#conjugation-input input').forEach(input => {
+                    const tense = input.dataset.tense;
+                    const pronoun = input.dataset.pronoun;
+                    if (!specificData.conjugations[tense]) {
+                        specificData.conjugations[tense] = {};
+                    }
+                    specificData.conjugations[tense][pronoun] = input.value.trim();
                 });
             }
-        }
-
-        // 选择性别
-        function selectGender(gender, button) {
-            selectedGender = gender;
-            // 移除所有按钮的 selected 类
-            const buttons = document.querySelectorAll('.gender-buttons button');
-            buttons.forEach(btn => btn.classList.remove('selected'));
-            // 添加 selected 类到当前点击的按钮
-            button.classList.add('selected');
-            updateConjugationFields();
-        }
-
-        // 添加词条
-        function addWord() {
-            const lang = document.getElementById('language').value;
-            const baseData = {
-                question: document.getElementById('question').value.trim(),
-                answer: document.getElementById('answer').value.trim(),
-                language: lang,
-                date: new Date().toISOString()
-            };
-
-            let specificData = {};
-            switch (lang) {
-                case 'en':
-                    specificData.note = document.getElementById('note')?.value;
-                    break;
-
-                case 'fr':
-                case 'de':
-                    const wordType = document.getElementById('word-type').value;
-                    specificData.type = wordType;
-
-                    if (wordType === 'noun') {
-                        if (!selectedGender) return alert('请选择性别！');
-                        if (!document.getElementById('plural').value) return alert('请输入复数形式！');
-
-                        specificData.gender = selectedGender;
-                        specificData.plural = document.getElementById('plural').value;
-                    } else if (wordType === 'verb' && lang === 'fr') {
-                        specificData.conjugations = {};
-                        document.querySelectorAll('#conjugation-input input').forEach(input => {
-                            const tense = input.dataset.tense;
-                            const pronoun = input.dataset.pronoun;
-                            if (!specificData.conjugations[tense]) {
-                                specificData.conjugations[tense] = {};
-                            }
-                            specificData.conjugations[tense][pronoun] = input.value.trim();
-                        });
-                    }
-                    selectedGender = null;
-                    break;
-
-                case 'ar':
-                    specificData = {
-                        type: document.getElementById('word-type').value,
-                        rootLetters: document.getElementById('root-letters').value
-                    };
-                    break;
-            }
-
-            if (!baseData.question || !baseData.answer) return alert('请填写必填字段！');
-
-            words[lang].push({ ...baseData, ...specificData });
-            localStorage.setItem(`words_${lang}`, JSON.stringify(words[lang]));
-            clearInputs();
-            updateWordList();
-        }
-
-        // 清空输入
-        function clearInputs() {
-            document.getElementById('question').value = '';
-            document.getElementById('answer').value = '';
-            document.querySelectorAll('#dynamic-inputs input').forEach(input => input.value = '');
             selectedGender = null;
-            updateInputFields();
-        }
+            break;
+            
+        case 'ar':
+            specificData = {
+                type: document.getElementById('word-type').value,
+                rootLetters: document.getElementById('root-letters').value
+            };
+            break;
+    }
 
-        // 更新词库列表
-        function updateWordList() {
-            const filterLang = document.getElementById('filter-language').value;
-            const list = document.getElementById('word-list');
+    if (!baseData.question || !baseData.answer) return alert('请填写必填字段！');
+    
+    words[lang].push({...baseData, ...specificData});
+    localStorage.setItem(`words_${lang}`, JSON.stringify(words[lang]));
+    clearInputs();
+    updateWordList();
+}
 
-            let displayWords = [];
-            if (filterLang === 'all') {
-                displayWords = [...words.en, ...words.fr, ...words.de, ...words.ar];
-            } else {
-                displayWords = words[filterLang];
-            }
+// 清空输入
+function clearInputs() {
+    document.getElementById('question').value = '';
+    document.getElementById('answer').value = '';
+    document.querySelectorAll('#dynamic-inputs input').forEach(input => input.value = '');
+    selectedGender = null;
+    updateInputFields();
+}
 
-            displayWords.sort((a, b) => new Date(b.date) - new Date(a.date));
-            list.innerHTML = displayWords.map((word, index) => `
+// 更新词库列表
+function updateWordList() {
+    const filterLang = document.getElementById('filter-language').value;
+    const list = document.getElementById('word-list');
+    
+    let displayWords = [];
+    if (filterLang === 'all') {
+        displayWords = [...words.en, ...words.fr, ...words.de, ...words.ar];
+    } else {
+        displayWords = words[filterLang];
+    }
+
+    displayWords.sort((a, b) => new Date(b.date) - new Date(a.date));
+    list.innerHTML = displayWords.map((word, index) => `
         <div class="word-item" data-lang="${word.language}" data-index="${index}">
             <div class="date-tag">${new Date(word.date).toLocaleDateString()}</div>
             <h3>${word.question} (${word.language.toUpperCase()})</h3>
@@ -425,31 +382,154 @@
             </div>
         </div>
     `).join('');
+}
+
+// 编辑词条
+function editWord(lang, index) {
+    const word = words[lang][index];
+    let newData = {...word};
+
+    newData.question = prompt("修改问题/单词", word.question) || word.question;
+    newData.answer = prompt("修改答案/翻译", word.answer) || word.answer;
+
+    if (word.type === 'noun') {
+        newData.gender = prompt("修改性别", word.gender) || word.gender;
+        newData.plural = prompt("修改复数形式", word.plural) || word.plural;
+    }
+
+    if (word.type === 'verb' && lang === 'fr') {
+        Object.entries(word.conjugations || {}).forEach(([tense, forms]) => {
+            Object.keys(forms).forEach(pronoun => {
+                const newForm = prompt(`修改【${tense}】${pronoun.replace(/_/g, '/')}`, forms[pronoun]);
+                if (newForm !== null) {
+                    newData.conjugations[tense][pronoun] = newForm.trim();
+                }
+            });
+        });
+    }
+
+    words[lang][index] = newData;
+    localStorage.setItem(`words_${lang}`, JSON.stringify(words[lang]));
+    updateWordList();
+}
+
+// 删除词条
+function deleteWord(lang, index) {
+    if (confirm("确定要删除这个词条吗？")) {
+        words[lang].splice(index, 1);
+        localStorage.setItem(`words_${lang}`, JSON.stringify(words[lang]));
+        updateWordList();
+    }
+}
+
+// 考核功能
+function startQuiz() {
+    const quizLang = document.getElementById('quiz-language').value;
+    let pool = [];
+    
+    if (quizLang === 'all') {
+        pool = [...words.en, ...words.fr, ...words.de, ...words.ar];
+    } else {
+        pool = words[quizLang];
+    }
+
+    if (pool.length === 0) return alert('请先添加词条！');
+    
+    const quizWords = getRandomSubarray(pool, 10);
+    let current = 0, score = 0;
+
+    function showQuestion() {
+        const word = quizWords[current];
+        const quizArea = document.getElementById('quiz-area');
+        quizArea.innerHTML = `
+            <div class="quiz-question">
+                <h3>第 ${current + 1} 题 (${word.language.toUpperCase()})</h3>
+                <p>${generateQuestion(word)}</p>
+                <input type="text" id="answer-input">
+                <button onclick="checkAnswer()">提交</button>
+            </div>
+        `;
+    }
+
+    window.checkAnswer = () => {
+        const userAnswer = document.getElementById('answer-input').value.trim();
+        const correctAnswers = getCorrectAnswers(quizWords[current]);
+        
+        if (correctAnswers.includes(userAnswer.toLowerCase())) {
+            score++;
+            alert('正确！✅');
+        } else {
+            alert(`错误！❌ 正确答案是: ${correctAnswers.join(' 或 ')}`);
         }
 
-        // 编辑词条
-        function editWord(lang, index) {
-            const word = words[lang][index];
-            let newData = { ...word };
+        current++;
+        if (current < quizWords.length) {
+            showQuestion();
+        } else {
+            showScore();
+        }
+    }
 
-            newData.question = prompt("修改问题/单词", word.question) || word.question;
-            newData.answer = prompt("修改答案/翻译", word.answer) || word.answer;
+    function showScore() {
+        document.getElementById('score').innerHTML = `
+            <h3>得分: ${score}/${quizWords.length}</h3>
+            <button onclick="startQuiz()">重新测试</button>
+        `;
+    }
 
+    showQuestion();
+}
+
+// 辅助函数
+function getRandomSubarray(arr, n) {
+    return [...arr].sort(() => Math.random() - 0.5).slice(0, n);
+}
+
+function generateQuestion(word) {
+    const questionTypes = {
+        en: `"${word.answer}"的英文是什么？`,
+        fr: word.type === 'noun' ? 
+            `"${word.question}"的性别和复数形式是？` : 
+            `"${word.answer}"的${getRandomConjugationTense(word)}形式是？`,
+        de: word.type === 'noun' ?
+            `"${word.question}"的词性是？` :
+            `"${word.answer}"的${getRandomConjugationTense(word)}形式是？`,
+        ar: `"${word.answer}"的词根字母是？`
+    };
+    return questionTypes[word.language] || `"${word.answer}"对应的单词是？`;
+}
+
+function getCorrectAnswers(word) {
+    let answers = [];
+    switch(word.language) {
+        case 'en':
+            answers = [word.question];
+            break;
+        case 'fr':
+        case 'de':
             if (word.type === 'noun') {
-                newData.gender = prompt("修改性别", word.gender) || word.gender;
-                newData.plural = prompt("修改复数形式", word.plural) || word.plural;
+                answers = [word.gender, word.plural];
+            } else if (word.type === 'verb') {
+                const tense = getRandomConjugationTense(word);
+                const pronoun = getRandomPronoun(word.conjugations[tense]);
+                answers = [word.conjugations[tense][pronoun]];
             }
+            break;
+        case 'ar':
+            answers = [word.rootLetters];
+            break;
+    }
+    return answers.map(a => a?.toLowerCase()).filter(a => a);
+}
 
-            if (word.type === 'verb' && lang === 'fr') {
-                Object.entries(word.conjugations || {}).forEach(([tense, forms]) => {
-                    Object.keys(forms).forEach(pronoun => {
-                        const newForm = prompt(`修改【${tense}】${pronoun.replace(/_/g, '/')}`, forms[pronoun]);
-                        if (newForm !== null) {
-                            newData.conjugations[tense][pronoun] = newForm.trim();
-                        }
-                    });
-                });
-            }
+function getRandomConjugationTense(word) {
+    const tenses = Object.keys(word.conjugations || {});
+    return tenses[Math.floor(Math.random() * tenses.length)];
+}
 
-            words[lang][index] = newData;
-            localStorage.setItem(`words_${lang}`, JSON.stringify
+// 初始化
+showContent('input');
+updateWordList();
+</script>
+</body>
+</html>
